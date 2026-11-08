@@ -54,6 +54,15 @@ Use this for ![macOS](misc/badge-macos.svg) (e.g. `runs-on: macos-latest`) runne
     files: …
 ```
 
+For Windows with **PowerShell v5.1 and earlier** installed (`powershell`, not `pwsh` PowerShell 6 or later), there is the Windows PowerShell variant:
+```yaml
+- name: Publish Test Results
+  uses: EnricoMi/publish-unit-test-result-action/windows/powershell@v2
+  if: (!cancelled())
+  with:
+    files: …
+```
+
 For Windows **without PowerShell** installed, there is the Bash shell variant:
 ```yaml
 - name: Publish Test Results
@@ -370,12 +379,15 @@ You can control the Docker image used for the action as below. For this, you nee
     files: …
 ```
 
-| Option            |               Default Value                | Description                                                                                                      |
-|:------------------|:------------------------------------------:|:-----------------------------------------------------------------------------------------------------------------|
-| `docker_registry` |                 `ghcr.io`                  | The docker registry to pull the pre-built action from. Defaults to the Github registry `ghcr.io`.                |
-| `docker_image`    | `enricomi/publish-unit-test-result-action` | The docker image name to pull the pre-built action from. Defaults to `enricomi/publish-unit-test-result-action`. |
-| `docker_tag`      |      *The same version as in `uses:`*      | The docker tag to pull the pre-built action from. This is usually not needed.                                    |
-| `docker_platform` |                                            | The platform to use when pulling the docker image.                                                               |
+| Option            |               Default Value                | Description                                                                                                                 |
+|:------------------|:------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------|
+| `docker_registry` |                 `ghcr.io`                  | The docker registry to pull the pre-built action from. Defaults to the Github registry `ghcr.io`.                           |
+| `docker_image`    | `enricomi/publish-unit-test-result-action` | The docker image name to pull the pre-built action from. Defaults to `enricomi/publish-unit-test-result-action`.            |
+| `docker_tag`      |      *The same version as in `uses:`*      | The docker tag to pull the pre-built action from, optionally with a digest (tag@sha256:digest). This is usually not needed. |
+| `docker_platform` |                                            | The platform to use when pulling the docker image.                                                                          |
+
+The default `docker_tag` of a release includes the image digest (`vX.Y.Z@sha256:…`), which identifies the exact image regardless of the tag.
+If you pull from a registry or image where that digest does not exist, for example an image you built yourself, also set `docker_tag`.
 </details>
 
 ## JSON result
@@ -560,10 +572,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -572,7 +584,7 @@ jobs:
 
       - name: Upload Test Results
         if: (!cancelled())
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: Test Results (Python ${{ matrix.python-version }})
           path: pytest.xml
@@ -596,7 +608,7 @@ jobs:
 
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           path: artifacts
 
@@ -637,7 +649,7 @@ event_file:
   runs-on: ubuntu-latest
   steps:
   - name: Upload
-    uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+    uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
     with:
       name: Event File
       path: ${{ github.event_path }}
@@ -649,7 +661,7 @@ Adjust the value of `path` to fit your setup:
 ```yaml
 - name: Upload Test Results
   if: (!cancelled())
-  uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+  uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
   with:
     name: Test Results
     path: |
@@ -707,7 +719,7 @@ jobs:
 
     steps:
       - name: Download and Extract Artifacts
-        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151  # v21
+        uses: dawidd6/action-download-artifact@a92c7ae74cf1df8810783758581e485ac3aaa309  # v28
         with:
            run_id: ${{ github.event.workflow_run.id }}
            path: artifacts
@@ -875,7 +887,7 @@ Self-hosted runners may require setting up a Python environment first:
 
 ```yaml
 - name: Setup Python
-  uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+  uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
   with:
     python-version: 3.8
 ```
@@ -892,7 +904,8 @@ is **deprecated**, please use an action appropriate for your operating system an
 
 - Linux (Bash shell): `uses: EnricoMi/publish-unit-test-result-action/linux@v2`
 - macOS (Bash shell): `uses: EnricoMi/publish-unit-test-result-action/macos@v2`
-- Windows (PowerShell): `uses: EnricoMi/publish-unit-test-result-action/windows@v2`
+- Windows (PowerShell v6 or later: `pwsh`): `uses: EnricoMi/publish-unit-test-result-action/windows@v2`
+- Windows (PowerShell v5.1 or earlier: `powershell`): `uses: EnricoMi/publish-unit-test-result-action/windows/powershell@v2`
 - Windows (Bash shell): `uses: EnricoMi/publish-unit-test-result-action/windows/bash@v2`
 
 These are non-Docker variations of this action. For details, see section ["Running as a non-Docker action"](#running-as-a-non-docker-action) above.
