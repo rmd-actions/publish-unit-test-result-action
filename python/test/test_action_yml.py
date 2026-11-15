@@ -1,5 +1,6 @@
 import hashlib
 import pathlib
+import re
 import sys
 import unittest
 
@@ -19,15 +20,18 @@ class TestActionYml(unittest.TestCase):
             dockerfile_action = yaml.safe_load(r)
 
         image = dockerfile_action.get('runs', {}).get('image', '')
-        self.assertTrue(image.startswith('docker://'), image)
-        version = image.split(':')[-1]
+        match = re.fullmatch(r'docker://ghcr\.io/enricomi/publish-unit-test-result-action:'
+                             r'(?P<version>v\d+\.\d+\.\d+)(?P<digest>@sha256:[0-9a-f]{64})?', image)
+        self.assertIsNotNone(match, f'image in action.yml must be pinned to a version, optionally with a digest: {image}')
+        version = match.group('version')
+        digest = match.group('digest') or ''
         self.assertEqual(__version__, version, 'version in action.yml must match __version__ in python/publish/__init__.py')
 
         with open(project_root / 'docker' / 'action.yml', encoding='utf-8') as r:
             docker_action = yaml.safe_load(r)
 
         default_docker_tag = docker_action.get('inputs', {}).get('docker_tag', {}).get('default')
-        self.assertEqual(default_docker_tag, version, 'version in docker/action.yml must match __version__ in python/publish/__init__.py')
+        self.assertEqual(default_docker_tag, version + digest, 'version and digest in docker/action.yml must match those in action.yml')
 
 
     def test_composite_action(self):
@@ -44,6 +48,9 @@ class TestActionYml(unittest.TestCase):
 
     def test_windows_bash_action(self):
         self.do_test_composite_action('windows/bash')
+
+    def test_windows_powershell_action(self):
+        self.do_test_composite_action('windows/powershell')
 
     def do_test_composite_action(self, action: str):
         with open(project_root / 'action.yml', encoding='utf-8') as r:
@@ -146,6 +153,9 @@ class TestActionYml(unittest.TestCase):
 
     def test_windows_bash_action_types(self):
         self.do_test_action_types('windows/bash')
+
+    def test_windows_powershell_action_types(self):
+        self.do_test_action_types('windows/powershell')
 
     def do_test_action_types(self, subaction: str, extra_inputs: dict = None):
         with open(project_root / 'action-types.yml', encoding='utf-8') as r:
